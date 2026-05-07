@@ -67,7 +67,9 @@ cat > ~/hammerwhisper/config.json <<EOF
 {
     "apiKey": "$API_KEY",
     "apiUrl": "$API_URL",
-    "model": "$MODEL"
+    "model": "$MODEL",
+    "hotkey": "$HOTKEY",
+    "modifier": "$MOD_CHOICE"
 }
 EOF
 
