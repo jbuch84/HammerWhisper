@@ -117,16 +117,17 @@ local indicatorPos = nil
 local recordingStart = nil
 local lastTrigger = 0
 
-local defaultBg = { red = 0.12, green = 0.12, blue = 0.12, alpha = 0.88 }
-local recordingBg = { red = 0.35, green = 0.05, blue = 0.05, alpha = 0.88 }
-local transcribingBg = { red = 0.30, green = 0.24, blue = 0.02, alpha = 0.88 }
-local doneBg = { red = 0.06, green = 0.26, blue = 0.06, alpha = 0.88 }
+local bgColor = { red = 0.12, green = 0.12, blue = 0.12, alpha = 0.88 }
+local recordingColor = { red = 0.85, green = 0.35, blue = 0.35, alpha = 0.9 }
+local transcribingColor = { red = 0.85, green = 0.75, blue = 0.25, alpha = 0.9 }
+local doneColor = { red = 0.35, green = 0.80, blue = 0.35, alpha = 0.9 }
+local defaultColor = { white = 1, alpha = 0.9 }
 
-local function showIndicator(labelText, pulse, bgColor)
+local function showIndicator(labelText, pulse, textColor)
     if blinkTimer then blinkTimer:stop(); blinkTimer = nil end
     if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
 
-    local color = bgColor or defaultBg
+    local color = textColor or defaultColor
     local w = math.max(52, #labelText * 8 + 24)
     local h = 28
 
@@ -138,13 +139,13 @@ local function showIndicator(labelText, pulse, bgColor)
 
     indicatorCanvas[1] = {
         type = "rectangle", action = "fill",
-        fillColor = color,
+        fillColor = bgColor,
         roundedRectRadii = { xRadius = 8, yRadius = 8 },
         frame = { x = 0, y = 0, w = w, h = h },
     }
     indicatorCanvas[2] = {
         type = "text", text = labelText,
-        textColor = { white = 1, alpha = 0.9 },
+        textColor = color,
         textSize = 12,
         frame = { x = 10, y = 7, w = w - 16, h = 16 },
     }
@@ -160,13 +161,13 @@ local function showIndicator(labelText, pulse, bgColor)
     end
 end
 
-local function hideIndicator(labelText, duration, bgColor)
+local function hideIndicator(labelText, duration, textColor)
     if blinkTimer then blinkTimer:stop(); blinkTimer = nil end
     if durationTimer then durationTimer:stop(); durationTimer = nil end
     if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
 
     if labelText then
-        showIndicator(labelText, false, bgColor)
+        showIndicator(labelText, false, textColor)
         hs.timer.doAfter(duration or 1.5, function()
             if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
         end)
@@ -180,14 +181,14 @@ hs.hotkey.bind($MODIFIER, "$HOTKEY", function()
 
     if not recording then
         indicatorPos = hs.mouse.absolutePosition()
-        showIndicator("● 0:00", true, recordingBg)
+        showIndicator("● 0:00", true, recordingColor)
 
         recordingStart = hs.timer.secondsSinceEpoch()
         durationTimer = hs.timer.doEvery(1.0, function()
             local elapsed = math.floor(hs.timer.secondsSinceEpoch() - recordingStart)
             local mins = math.floor(elapsed / 60)
             local secs = elapsed % 60
-            showIndicator(string.format("● %d:%02d", mins, secs), true, recordingBg)
+            showIndicator(string.format("● %d:%02d", mins, secs), true, recordingColor)
         end)
 
         ffmpegTask = hs.task.new("/opt/homebrew/bin/ffmpeg", nil, {
@@ -198,7 +199,7 @@ hs.hotkey.bind($MODIFIER, "$HOTKEY", function()
         recording = true
 
     else
-        hideIndicator("transcribing...", 8, transcribingBg)
+        hideIndicator("transcribing...", 8, transcribingColor)
 
         if ffmpegTask and ffmpegTask:isRunning() then ffmpegTask:terminate() end
         ffmpegTask = nil
@@ -207,7 +208,7 @@ hs.hotkey.bind($MODIFIER, "$HOTKEY", function()
         hs.timer.doAfter(1.0, function()
             local attrs = hs.fs.attributes("/tmp/hammerwhisper.wav")
             if not attrs or attrs.size < 1000 then
-                hideIndicator("nothing recorded", 2, defaultBg)
+                hideIndicator("nothing recorded", 2, defaultColor)
                 return
             end
 
@@ -217,12 +218,12 @@ hs.hotkey.bind($MODIFIER, "$HOTKEY", function()
                 os.getenv("HOME") .. "/hammerwhisper/dictate",
                 function(exitCode, stdOut, stdErr)
                     if exitCode == 0 then
-                        hideIndicator("done ✓", 1.5, doneBg)
+                        hideIndicator("done ✓", 1.5, doneColor)
                         hs.timer.doAfter(0.3, function()
                             hs.pasteboard.setContents(previousClipboard or "")
                         end)
                     else
-                        hideIndicator("error", 3, defaultBg)
+                        hideIndicator("error", 3, defaultColor)
                         print("dictate error:", stdErr)
                     end
                 end, {}
