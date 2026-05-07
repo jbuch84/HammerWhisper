@@ -6,25 +6,41 @@ echo ""
 echo "🎙️  HammerWhisper Installer"
 echo "----------------------------"
 
-# 1. Check Homebrew
+# ── 1. Homebrew ──────────────────────────────────────────────────────────────
 if ! command -v brew &>/dev/null; then
     echo "Installing Homebrew..."
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    if [ -f /opt/homebrew/bin/brew ]; then
+        eval "$(/opt/homebrew/bin/brew shellenv)"
+    elif [ -f /usr/local/bin/brew ]; then
+        eval "$(/usr/local/bin/brew shellenv)"
+    fi
 fi
 
-# 2. Check ffmpeg
+if ! command -v brew &>/dev/null; then
+    echo "❌ Homebrew installation failed or not found in PATH."
+    echo "   Try opening a new terminal and running the installer again."
+    exit 1
+fi
+
+# ── 2. ffmpeg ────────────────────────────────────────────────────────────────
 if ! command -v ffmpeg &>/dev/null; then
     echo "Installing ffmpeg..."
     brew install ffmpeg
 fi
 
-# 3. Check Hammerspoon
+# ── 3. Hammerspoon ───────────────────────────────────────────────────────────
 if [ ! -d "/Applications/Hammerspoon.app" ]; then
     echo "Installing Hammerspoon..."
     brew install --cask hammerspoon
+    echo ""
+    echo "⚠️  macOS may block Hammerspoon on first launch."
+    echo "   If you see a security warning, go to:"
+    echo "   System Settings → Privacy & Security → click 'Open Anyway'"
+    echo ""
 fi
 
-# 4. Ask for API key
+# ── 4. API key ───────────────────────────────────────────────────────────────
 echo ""
 echo "Get a free Groq API key at https://console.groq.com (no credit card needed)"
 read -p "Paste your API key: " API_KEY </dev/tty
@@ -33,16 +49,16 @@ if [ -z "$API_KEY" ]; then
     exit 1
 fi
 
-# 5. Optional: custom API URL
+# ── 5. Optional: custom API URL ──────────────────────────────────────────────
 echo ""
 read -p "API URL (press Enter to use Groq default): " API_URL </dev/tty
 API_URL=${API_URL:-"https://api.groq.com/openai/v1/audio/transcriptions"}
 
-# 6. Optional: custom model
+# ── 6. Optional: custom model ────────────────────────────────────────────────
 read -p "Model (press Enter for whisper-large-v3): " MODEL </dev/tty
 MODEL=${MODEL:-"whisper-large-v3"}
 
-# 7. Choose hotkey modifier
+# ── 7. Hotkey modifier ───────────────────────────────────────────────────────
 echo ""
 echo "Choose a hotkey modifier:"
 echo "  1) cmd+shift (default)"
@@ -60,7 +76,7 @@ read -p "Hotkey letter (default: D): " HOTKEY </dev/tty
 HOTKEY=${HOTKEY:-D}
 HOTKEY=$(echo "$HOTKEY" | tr '[:lower:]' '[:upper:]')
 
-# 8. Create install directory and config
+# ── 8. Create install directory and config ───────────────────────────────────
 mkdir -p ~/hammerwhisper
 
 cat > ~/hammerwhisper/config.json <<EOF
@@ -73,14 +89,19 @@ cat > ~/hammerwhisper/config.json <<EOF
 }
 EOF
 
-# 9. Download the binary
+# ── 9. Download the binary ───────────────────────────────────────────────────
 echo ""
 echo "Downloading HammerWhisper..."
-curl -fsSL https://github.com/jbuch84/HammerWhisper/releases/latest/download/dictate -o ~/hammerwhisper/dictate
+if ! curl -fsSL https://github.com/jbuch84/HammerWhisper/releases/latest/download/dictate \
+        -o ~/hammerwhisper/dictate; then
+    echo "❌ Failed to download the dictate binary."
+    echo "   Check your internet connection and try again."
+    exit 1
+fi
 xattr -d com.apple.quarantine ~/hammerwhisper/dictate 2>/dev/null || true
 chmod +x ~/hammerwhisper/dictate
 
-# 10. Write Hammerspoon config
+# ── 10. Write Hammerspoon config ─────────────────────────────────────────────
 mkdir -p ~/.hammerspoon
 
 cat > ~/.hammerspoon/init.lua <<LUA
@@ -204,15 +225,30 @@ hs.hotkey.bind({"cmd", "shift"}, "R", function()
 end)
 LUA
 
-# 11. Reload Hammerspoon if running
+# ── 11. Launch Hammerspoon and reload config ─────────────────────────────────
+echo "Launching Hammerspoon..."
+open -a Hammerspoon
+sleep 2
 osascript -e 'tell application "Hammerspoon" to reload config' 2>/dev/null || true
+
+# ── 12. Open Accessibility settings ─────────────────────────────────────────
+echo "Opening Accessibility settings..."
+sleep 1
+open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
 
 echo ""
 echo "✅ HammerWhisper installed!"
 echo ""
-echo "⚠️  One manual step required:"
-echo "   System Settings → Privacy & Security → Accessibility"
-echo "   → Enable Hammerspoon"
+echo "⚠️  Two quick things to do before using it:"
+echo ""
+echo "   1. Grant Accessibility permission:"
+echo "      System Settings just opened — find Hammerspoon and toggle it ON"
+echo ""
+echo "   2. Enable launch at login so it survives restarts:"
+echo "      Click the 🔨 in your menu bar → Preferences → check 'Launch at login'"
 echo ""
 echo "   Then press $MODIFIER+$HOTKEY anywhere to start dictating."
-echo "   Get a free Groq API key at https://console.groq.com"
+echo "   (Press once to record, press again to stop and transcribe)"
+echo ""
+echo "💡 Something not working? Run: ~/hammerwhisper/dictate --check"
+echo ""
