@@ -27,7 +27,7 @@ fi
 # 4. Ask for API key
 echo ""
 echo "Get a free Groq API key at https://console.groq.com (no credit card needed)"
-read -p "Paste your API key: " API_KEY
+read -p "Paste your API key: " API_KEY </dev/tty
 if [ -z "$API_KEY" ]; then
     echo "❌ No API key entered. Exiting."
     exit 1
@@ -35,11 +35,11 @@ fi
 
 # 5. Optional: custom API URL
 echo ""
-read -p "API URL (press Enter to use Groq default): " API_URL
+read -p "API URL (press Enter to use Groq default): " API_URL </dev/tty
 API_URL=${API_URL:-"https://api.groq.com/openai/v1/audio/transcriptions"}
 
 # 6. Optional: custom model
-read -p "Model (press Enter for whisper-large-v3): " MODEL
+read -p "Model (press Enter for whisper-large-v3): " MODEL </dev/tty
 MODEL=${MODEL:-"whisper-large-v3"}
 
 # 7. Choose hotkey modifier
@@ -48,7 +48,7 @@ echo "Choose a hotkey modifier:"
 echo "  1) cmd+shift (default)"
 echo "  2) cmd+option"
 echo "  3) ctrl+shift"
-read -p "Enter 1, 2, or 3 [1]: " MOD_CHOICE
+read -p "Enter 1, 2, or 3 [1]: " MOD_CHOICE </dev/tty
 
 case "$MOD_CHOICE" in
     2) MODIFIER='{"cmd", "option"}' ;;
@@ -56,7 +56,7 @@ case "$MOD_CHOICE" in
     *) MODIFIER='{"cmd", "shift"}' ;;
 esac
 
-read -p "Hotkey letter (default: D): " HOTKEY
+read -p "Hotkey letter (default: D): " HOTKEY </dev/tty
 HOTKEY=${HOTKEY:-D}
 HOTKEY=$(echo "$HOTKEY" | tr '[:lower:]' '[:upper:]')
 
