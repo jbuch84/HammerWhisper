@@ -46,7 +46,7 @@ if (process.argv.includes("--check")) {
   if (ffmpegPath) {
     try {
       const result = execSync(`${ffmpegPath} -f avfoundation -list_devices true -i "" 2>&1 || true`, { encoding: "utf8" });
-      const hasMic = result.includes("avfoundation") && (result.includes("Built-in") || result.includes("Microphone") || result.includes(":0"));
+      const hasMic = result.includes("AVFoundation") || result.includes("avfoundation") || result.includes("[0]") || result.includes("input device");
       check("Microphone accessible via avfoundation", hasMic,
         "Make sure a mic is connected and Terminal has Microphone permission in System Settings → Privacy & Security");
     } catch {
