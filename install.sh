@@ -77,6 +77,7 @@ EOF
 echo ""
 echo "Downloading HammerWhisper..."
 curl -fsSL https://github.com/jbuch84/HammerWhisper/releases/latest/download/dictate -o ~/hammerwhisper/dictate
+xattr -d com.apple.quarantine ~/hammerwhisper/dictate 2>/dev/null || true
 chmod +x ~/hammerwhisper/dictate
 
 # 10. Write Hammerspoon config
