@@ -144,9 +144,11 @@ local function showIndicator(labelText, pulse, textColor)
         frame = { x = 0, y = 0, w = w, h = h },
     }
     indicatorCanvas[2] = {
-        type = "text", text = labelText,
-        textColor = color,
-        textSize = 12,
+        type = "text",
+        text = hs.styledtext.new(labelText, {
+            color = color,
+            font = { size = 12 }
+        }),
         frame = { x = 10, y = 7, w = w - 16, h = 16 },
     }
 
