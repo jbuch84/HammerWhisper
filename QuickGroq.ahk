@@ -71,9 +71,9 @@ global ClipVault   := ""
 
         NodeExe := "node"
         for _, candidate in ["C:\Program Files\nodejs\node.exe",
-                              A_UserProfile "\AppData\Roaming\nvm\current\node.exe",
                               "C:\Program Files (x86)\nodejs\node.exe",
-                              A_UserProfile "\scoop\apps\nodejs\current\node.exe"] {
+                              "C:\Users\" A_UserProfile "\AppData\Roaming\nvm\current\node.exe",
+                              "C:\Users\" A_UserProfile "\scoop\apps\nodejs\current\node.exe"] {
             if FileExist(candidate) {
                 NodeExe := candidate
                 break
