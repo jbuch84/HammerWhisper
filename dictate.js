@@ -20,7 +20,7 @@ if (process.argv.includes("--check")) {
     const configExists = existsSync(CONFIG_PATH);
     const installCmd = platform === "win32"
         ? "irm 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1' | iex"
-        : "curl -sSL 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh' | bash";
+        : "curl -sSL 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh' -o /tmp/quickgroq_install.sh && bash /tmp/quickgroq_install.sh";
     check("config.json found", configExists, `Run the installer again:\n  ${installCmd}`);
 
     // 2. API key
@@ -83,7 +83,7 @@ if (process.argv.includes("--check")) {
 // ── Normal transcription mode ──────────────────────────────────────────────
 (async () => {
     if (!existsSync(CONFIG_PATH)) {
-        console.error("Missing config.json — run the installer again.");
+        process.stderr.write("Missing config.json — run the installer again.\n");
         process.exit(1);
     }
 
@@ -91,12 +91,12 @@ if (process.argv.includes("--check")) {
     try {
         config = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
     } catch {
-        console.error("config.json is malformed — please re-run the installer or fix the JSON manually.");
+        process.stderr.write("config.json is malformed — please re-run the installer or fix the JSON manually.\n");
         process.exit(1);
     }
 
     if (!config.apiKey || config.apiKey === "YOUR_API_KEY_HERE") {
-        console.error("No API key set — open ~/quickgroq/config.json and add your key.");
+        process.stderr.write("No API key set — open ~/quickgroq/config.json and add your key.\n");
         process.exit(1);
     }
 
@@ -108,7 +108,7 @@ if (process.argv.includes("--check")) {
         : "/tmp/quickgroq.wav";
 
     if (!existsSync(AUDIO_FILE)) {
-        console.error(`Audio file not found: ${AUDIO_FILE}`);
+        process.stderr.write(`Audio file not found: ${AUDIO_FILE}\n`);
         process.exit(1);
     }
 
@@ -127,13 +127,13 @@ if (process.argv.includes("--check")) {
             body: form,
         });
     } catch (err) {
-        console.error("Network error contacting Groq API:", err.message);
+        process.stderr.write(`Network error contacting Groq API: ${err.message}\n`);
         process.exit(1);
     }
 
     if (!response.ok) {
         const body = await response.text().catch(() => "");
-        console.error(`Groq API error ${response.status}: ${body}`);
+        process.stderr.write(`Groq API error ${response.status}: ${body}\n`);
         process.exit(1);
     }
 
@@ -141,17 +141,12 @@ if (process.argv.includes("--check")) {
     const text = json.text?.trim();
 
     if (!text) {
-        console.error("No transcription returned:", JSON.stringify(json));
+        process.stderr.write(`No transcription returned: ${JSON.stringify(json)}\n`);
         process.exit(1);
     }
 
-    if (platform === "darwin") {
-        execSync(`printf '%s' ${JSON.stringify(text)} | pbcopy`);
-        execSync(`osascript -e 'tell application "System Events" to keystroke "v" using command down'`);
-    } else if (platform === "win32") {
-        // stdout is captured by QuickGroq.ahk via redirect to out.txt
-        process.stdout.write(text);
-    }
+    // Both platforms: write to stdout, let the caller handle pasting
+    process.stdout.write(text);
 
     if (existsSync(AUDIO_FILE)) unlinkSync(AUDIO_FILE);
 })();
