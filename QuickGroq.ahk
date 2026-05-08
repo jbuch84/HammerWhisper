@@ -37,6 +37,8 @@ global ClipVault   := ""
             return
         }
 
+        DllCall("winmm\mciSendString", "Str", "set capture bitspersample 16 channels 1 samplespersec 16000 bytespersec 32000 alignment 2", "Str", "", "UInt", 0, "Ptr", 0)
+
         IsRecording := true
         ClipVault   := ClipboardAll()
 
@@ -69,7 +71,7 @@ global ClipVault   := ""
         if FileExist(ErrFile)
             FileDelete(ErrFile)
 
-        ; Node.js detection — installer patches NVM_PATH and SCOOP_PATH placeholders
+        ; Node.js path patched by installer
         NodeExe := "NODEEXE_PATH"
 
         RunWait(A_ComSpec " /c `"" NodeExe "`" `"" NodeScript "`" > `"" OutFile "`" 2> `"" ErrFile "`"",, "Hide")
