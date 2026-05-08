@@ -24,7 +24,7 @@ Choose your operating system below. The installer handles downloading the necess
 
 ### 🍎 For Mac Users
 1. Open the **Terminal** app. (Press `Command + Space` on your keyboard, type `Terminal`, and hit Enter).
-2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the Terminal window, and hit Enter:
+2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the Terminal window, and hit Enter (replace gsk_yourkey with your actual key before running):
    ```bash
    curl -sSL 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh' | GROQ_API_KEY='gsk_yourkey' bash
    ```
