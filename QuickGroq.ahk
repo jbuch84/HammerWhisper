@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+#Warn VarUnset, Off
 InstallKeybdHook()
 
 ; ── Kill any other QuickGroq.ahk instances ───────────────────────────────────
@@ -12,15 +13,14 @@ for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process where 
 
 global IsRecording := false
 global ClipVault   := ""
+global UserProfile := EnvGet("USERPROFILE")
 
 ; ── Installer dynamically sets the hotkey on the line below ──────────────────
 ~^+d::
 {
-    global IsRecording, ClipVault
-    local WorkDir, AudioFile, NodeScript, OutFile, ErrFile, NodeExe, audioSize
-    local result, transcription, errMsg, candidate
+    global IsRecording, ClipVault, UserProfile
 
-    WorkDir    := A_UserProfile "\quickgroq"
+    WorkDir    := UserProfile "\quickgroq"
     AudioFile  := WorkDir "\audio.wav"
     NodeScript := WorkDir "\dictate.js"
     OutFile    := WorkDir "\out.txt"
@@ -53,7 +53,6 @@ global ClipVault   := ""
         DllCall("winmm\mciSendString", "Str", "stop capture",  "Str", "", "UInt", 0, "Ptr", 0)
         DllCall("winmm\mciSendString", "Str", "close capture", "Str", "", "UInt", 0, "Ptr", 0)
 
-        ; Guard: bail if nothing was recorded
         try {
             audioSize := FileGetSize(AudioFile)
         } catch {
@@ -72,12 +71,11 @@ global ClipVault   := ""
         if FileExist(ErrFile)
             FileDelete(ErrFile)
 
-        ; Detect Node.js path
         NodeExe := "node"
         for _, candidate in ["C:\Program Files\nodejs\node.exe",
-                              A_UserProfile "\AppData\Roaming\nvm\current\node.exe",
+                              UserProfile "\AppData\Roaming\nvm\current\node.exe",
                               "C:\Program Files (x86)\nodejs\node.exe",
-                              A_UserProfile "\scoop\apps\nodejs\current\node.exe"] {
+                              UserProfile "\scoop\apps\nodejs\current\node.exe"] {
             if FileExist(candidate) {
                 NodeExe := candidate
                 break
