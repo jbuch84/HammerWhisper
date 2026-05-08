@@ -37,6 +37,12 @@ if [ "$NODE_MAJOR" -lt 18 ]; then
     brew upgrade node || true
 fi
 
+# ── Detect ffmpeg path (differs on Apple Silicon vs Intel) ──────────────────
+FFMPEG_PATH=$(command -v ffmpeg 2>/dev/null || true)
+if [ -z "$FFMPEG_PATH" ]; then
+    FFMPEG_PATH=$( [ -f "/opt/homebrew/bin/ffmpeg" ] && echo "/opt/homebrew/bin/ffmpeg" || echo "/usr/local/bin/ffmpeg" )
+fi
+
 if [ ! -d "/Applications/Hammerspoon.app" ]; then
     echo "Installing Hammerspoon..."
     brew install --cask hammerspoon || true
@@ -47,7 +53,7 @@ if [ ! -d "/Applications/Hammerspoon.app" ]; then
     echo ""
 fi
 
-# ── All downloads done — pipe is exhausted, stdin is now the terminal ────────
+# ── All downloads done — pipe exhausted, stdin is now the terminal ───────────
 
 # ── 2. API Key ───────────────────────────────────────────────────────────────
 echo ""
@@ -68,9 +74,9 @@ echo "3) Command + Shift + 0"
 read -p "Enter 1, 2, or 3 [1]: " HOTKEY_CHOICE
 
 case "$HOTKEY_CHOICE" in
-    2) HS_MODS='["alt", "shift"]'; HS_KEY="d" ;;
-    3) HS_MODS='["cmd", "shift"]'; HS_KEY="0" ;;
-    *) HS_MODS='["cmd", "shift"]'; HS_KEY="d" ;;
+    2) HS_MODS='{"alt", "shift"}'; HS_KEY="d" ;;
+    3) HS_MODS='{"cmd", "shift"}'; HS_KEY="0" ;;
+    *) HS_MODS='{"cmd", "shift"}'; HS_KEY="d" ;;
 esac
 
 # ── 4. Write Config ─────────────────────────────────────────────────────────
@@ -80,11 +86,7 @@ cat > ~/quickgroq/config.json <<EOF
 {
   "apiKey": "$API_KEY",
   "apiUrl": "https://api.groq.com/openai/v1/audio/transcriptions",
-  "model": "whisper-large-v3",
-  "hotkey": {
-    "mods": $HS_MODS,
-    "key": "$HS_KEY"
-  }
+  "model": "whisper-large-v3"
 }
 EOF
 
@@ -106,6 +108,7 @@ cat > ~/.hammerspoon/init.lua <<LUAEOF
 local isRecording = false
 local audioFile   = "/tmp/quickgroq.wav"
 local nodePath    = "${NODE_PATH}"
+local ffmpegPath  = "${FFMPEG_PATH}"
 local scriptPath  = os.getenv("HOME") .. "/quickgroq/dictate.js"
 local mods        = ${HS_MODS}
 local key         = "${HS_KEY}"
@@ -115,7 +118,7 @@ hs.hotkey.bind(mods, key, function()
     if not isRecording then
         isRecording = true
         hs.alert.show("🎤 Recording…")
-        recordTask = hs.task.new("/opt/homebrew/bin/ffmpeg", nil,
+        recordTask = hs.task.new(ffmpegPath, nil,
             { "-y", "-f", "avfoundation", "-i", ":0", "-ar", "16000", "-ac", "1", audioFile })
         recordTask:start()
     else
