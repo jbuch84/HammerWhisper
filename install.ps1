@@ -102,14 +102,12 @@ Invoke-WebRequest -Uri "$RepoUrl/dictate.js"    -OutFile "$InstallDir\dictate.js
 Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.ahk"
 
 # ── 8. Patch hotkey and paths into AHK file ──────────────────────────────────
-$NvmPath   = "$env:USERPROFILE\AppData\Roaming\nvm\current\node.exe"
-$ScoopPath = "$env:USERPROFILE\scoop\apps\nodejs\current\node.exe"
+$NodeExePath = if ($nodePath) { $nodePath } else { "node" }
 
 $ahkContent = Get-Content "$InstallDir\QuickGroq.ahk" -Raw
 $ahkContent = $ahkContent -replace '~\^\+d::',  "~$HotkeyString`::"
 $ahkContent = $ahkContent -replace 'A_UserProfile "\\quickgroq"', "`"$InstallDir`""
-$ahkContent = $ahkContent -replace 'NVM_PATH',   $NvmPath
-$ahkContent = $ahkContent -replace 'SCOOP_PATH', $ScoopPath
+$ahkContent = $ahkContent -replace 'NODEEXE_PATH', $NodeExePath
 [System.IO.File]::WriteAllText(
     "$InstallDir\QuickGroq.ahk",
     $ahkContent,
