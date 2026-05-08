@@ -45,7 +45,7 @@ fi
 # ── 2. Configuration Setup ──────────────────────────────────────────────────
 echo ""
 echo "Get a free Groq API key at https://console.groq.com"
-read -r -p "Paste your API key: " API_KEY
+read -r -p "Paste your API key: " API_KEY </dev/tty
 
 if [ -z "$API_KEY" ]; then
     echo "❌ No API key entered. Exiting."
@@ -58,7 +58,7 @@ echo "Choose your Mac hotkey:"
 echo "1) Command + Shift + D (Default)"
 echo "2) Option + Shift + D"
 echo "3) Command + Shift + 0"
-read -r -p "Enter 1, 2, or 3 [1]: " HOTKEY_CHOICE
+read -r -p "Enter 1, 2, or 3 [1]: " HOTKEY_CHOICE </dev/tty
 
 case "$HOTKEY_CHOICE" in
     2) HS_MODS='["alt", "shift"]'; HS_KEY="d" ;;
