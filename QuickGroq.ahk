@@ -5,7 +5,7 @@ InstallKeybdHook()
 global IsRecording := false
 global ClipVault := ""
 
-; The installer will replace the line below with your chosen hotkey
+; Installer dynamically sets the hotkey on the line below
 ~^+d::
 {
     global IsRecording, ClipVault
@@ -15,18 +15,20 @@ global ClipVault := ""
     OutFile := WorkDir "\out.txt"
 
     if (!IsRecording) {
+        ; Start Recording
         IsRecording := true
         ClipVault := ClipboardAll()
-        ToolTip("🎤 Recording...")
+        ToolTip("🎤 Recording... (Clipboard backed up)")
     } 
     else {
+        ; Stop Recording & Transcribe
         IsRecording := false
         ToolTip("⏳ Transcribing...")
         
         if FileExist(OutFile)
             FileDelete(OutFile)
             
-        ; Run the transcription
+        ; Run the Node engine
         RunWait(A_ComSpec " /c node `"" NodeScript "`" > `"" OutFile "`"",, "Hide")
         
         if FileExist(OutFile) {
@@ -38,7 +40,7 @@ global ClipVault := ""
             }
         }
         
-        ; Restore original clipboard
+        ; Restore original data
         A_Clipboard := ClipVault
         ClipVault := ""
         
