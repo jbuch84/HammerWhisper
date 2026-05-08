@@ -42,7 +42,7 @@ global ClipVault   := ""
         IsRecording := true
         ClipVault   := ClipboardAll()
 
-        ToolTip("Recording… (Press hotkey to stop)")
+        ToolTip("Recording...(Press hotkey to stop)")
         DllCall("winmm\mciSendString", "Str", "record capture", "Str", "", "UInt", 0, "Ptr", 0)
 
     } else {
