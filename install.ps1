@@ -105,6 +105,8 @@ Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.
 $ahkContent = Get-Content "$InstallDir\QuickGroq.ahk" -Raw
 $ahkContent = $ahkContent -replace '~\^\+d::', "~$HotkeyString`::"
 $ahkContent = $ahkContent -replace 'A_UserProfile "\\quickgroq"', "`"$InstallDir`""
+$ahkContent = $ahkContent -replace 'A_UserProfile "\\\\AppData\\\\Roaming\\\\nvm\\\\current\\\\node.exe"', "`"$env:USERPROFILE\AppData\Roaming\nvm\current\node.exe`""
+$ahkContent = $ahkContent -replace 'A_UserProfile "\\\\scoop\\\\apps\\\\nodejs\\\\current\\\\node.exe"', "`"$env:USERPROFILE\scoop\apps\nodejs\current\node.exe`""
 [System.IO.File]::WriteAllText(
     "$InstallDir\QuickGroq.ahk",
     $ahkContent,
