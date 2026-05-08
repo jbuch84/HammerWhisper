@@ -53,6 +53,20 @@ if [ ! -d "/Applications/Hammerspoon.app" ]; then
     echo ""
 fi
 
+# ── Detect microphone device index ──────────────────────────────────────────
+echo "Detecting microphone..."
+FFMPEG_AUDIO_IDX=$("$FFMPEG_PATH" -f avfoundation -list_devices true -i "" 2>&1 | \
+    awk '/AVFoundation audio devices/,0 {
+        if (match($0, /\[([0-9]+)\]/, arr)) {
+            if ($0 !~ /Teams|Zoom|BlackHole|Immersed|Virtual|Aggregate|Display|Soundflower/) {
+                print arr[1]
+                exit
+            }
+        }
+    }')
+FFMPEG_AUDIO_IDX="${FFMPEG_AUDIO_IDX:-0}"
+echo "Using audio device index: $FFMPEG_AUDIO_IDX"
+
 # ── All downloads done — pipe exhausted, stdin is now the terminal ───────────
 
 # ── 2. API Key ───────────────────────────────────────────────────────────────
@@ -65,41 +79,53 @@ if [ -z "$API_KEY" ]; then
     exit 1
 fi
 
-# ── 3. Hotkey Selection ─────────────────────────────────────────────────────
+# ── 3. Optional: custom API URL & model ─────────────────────────────────────
 echo ""
-echo "Choose your Mac hotkey:"
-echo "1) Command + Shift + D (Default)"
-echo "2) Option + Shift + D"
-echo "3) Command + Shift + 0"
-read -p "Enter 1, 2, or 3 [1]: " HOTKEY_CHOICE
+read -p "API URL (press Enter to use Groq default): " API_URL
+API_URL=${API_URL:-"https://api.groq.com/openai/v1/audio/transcriptions"}
 
-case "$HOTKEY_CHOICE" in
-    2) HS_MODS='["alt", "shift"]'; HS_KEY="d" ;;
-    3) HS_MODS='["cmd", "shift"]'; HS_KEY="0" ;;
-    *) HS_MODS='["cmd", "shift"]'; HS_KEY="d" ;;
+read -p "Model (press Enter for whisper-large-v3): " MODEL
+MODEL=${MODEL:-"whisper-large-v3"}
+
+# ── 4. Hotkey Selection ─────────────────────────────────────────────────────
+echo ""
+echo "Choose a hotkey modifier:"
+echo "  1) cmd+shift (default)"
+echo "  2) cmd+option"
+echo "  3) ctrl+shift"
+read -p "Enter 1, 2, or 3 [1]: " MOD_CHOICE
+
+case "$MOD_CHOICE" in
+    2) HS_MODS='["cmd", "option"]' ;;
+    3) HS_MODS='["ctrl", "shift"]' ;;
+    *) HS_MODS='["cmd", "shift"]'  ;;
 esac
 
-# ── 4. Write Config (single source of truth for all settings) ───────────────
+read -p "Hotkey letter (press Enter for D): " HOTKEY
+HOTKEY=${HOTKEY:-D}
+HOTKEY=$(echo "$HOTKEY" | tr '[:upper:]' '[:lower:]')
+
+# ── 5. Write Config ─────────────────────────────────────────────────────────
 mkdir -p ~/quickgroq
 
 cat > ~/quickgroq/config.json <<EOF
 {
   "apiKey": "$API_KEY",
-  "apiUrl": "https://api.groq.com/openai/v1/audio/transcriptions",
-  "model": "whisper-large-v3",
+  "apiUrl": "$API_URL",
+  "model": "$MODEL",
   "hotkey": {
     "mods": $HS_MODS,
-    "key": "$HS_KEY"
+    "key": "$HOTKEY"
   }
 }
 EOF
 
-# ── 5. Download dictate.js ──────────────────────────────────────────────────
+# ── 6. Download dictate.js ──────────────────────────────────────────────────
 echo ""
 echo "Downloading QuickGroq engine..."
 curl -sSL "https://raw.githubusercontent.com/jbuch84/QuickGroq/main/dictate.js" -o ~/quickgroq/dictate.js
 
-# ── 6. Write Hammerspoon Config ─────────────────────────────────────────────
+# ── 7. Write Hammerspoon Config ─────────────────────────────────────────────
 if [ -f ~/.hammerspoon/init.lua ]; then
     echo "⚠️  Existing ~/.hammerspoon/init.lua found — backing up to init.lua.bak"
     cp ~/.hammerspoon/init.lua ~/.hammerspoon/init.lua.bak
@@ -123,44 +149,148 @@ if not config then
     return
 end
 
-local isRecording = false
-local audioFile   = "/tmp/quickgroq.wav"
-local nodePath    = "${NODE_PATH}"
-local ffmpegPath  = "${FFMPEG_PATH}"
-local scriptPath  = os.getenv("HOME") .. "/quickgroq/dictate.js"
-local mods        = config.hotkey.mods
-local key         = config.hotkey.key
-local recordTask  = nil
+local mods       = config.hotkey.mods
+local key        = config.hotkey.key
+local nodePath   = "${NODE_PATH}"
+local ffmpegPath = "${FFMPEG_PATH}"
+local audioIdx   = "${FFMPEG_AUDIO_IDX}"
+local scriptPath = os.getenv("HOME") .. "/quickgroq/dictate.js"
+local audioFile  = "/tmp/quickgroq.wav"
 
+-- ── Indicator styles ─────────────────────────────────────────────────────────
+local bgColor           = { red = 0.12, green = 0.12, blue = 0.12, alpha = 0.88 }
+local recordingColor    = { red = 0.85, green = 0.35, blue = 0.35, alpha = 0.9 }
+local transcribingColor = { red = 0.85, green = 0.75, blue = 0.25, alpha = 0.9 }
+local doneColor         = { red = 0.35, green = 0.80, blue = 0.35, alpha = 0.9 }
+local defaultColor      = { white = 1,  alpha = 0.9 }
+
+local recording       = false
+local ffmpegTask      = nil
+local indicatorCanvas = nil
+local blinkTimer      = nil
+local durationTimer   = nil
+local indicatorPos    = nil
+local recordingStart  = nil
+local lastTrigger     = 0
+
+local function showIndicator(labelText, pulse, textColor)
+    if blinkTimer      then blinkTimer:stop();             blinkTimer      = nil end
+    if indicatorCanvas then indicatorCanvas:delete();      indicatorCanvas = nil end
+
+    local color = textColor or defaultColor
+    local w = math.max(52, #labelText * 8 + 24)
+    local h = 28
+
+    indicatorCanvas = hs.canvas.new({
+        x = indicatorPos.x + 16,
+        y = indicatorPos.y + 16,
+        w = w, h = h
+    })
+
+    indicatorCanvas[1] = {
+        type      = "rectangle",
+        action    = "fill",
+        fillColor = bgColor,
+        roundedRectRadii = { xRadius = 8, yRadius = 8 },
+        frame     = { x = 0, y = 0, w = w, h = h },
+    }
+    indicatorCanvas[2] = {
+        type  = "text",
+        text  = hs.styledtext.new(labelText, {
+            color = color,
+            font  = { size = 12 }
+        }),
+        frame = { x = 10, y = 7, w = w - 16, h = 16 },
+    }
+
+    indicatorCanvas:show()
+
+    if pulse then
+        local visible = true
+        blinkTimer = hs.timer.doEvery(0.6, function()
+            visible = not visible
+            if indicatorCanvas then indicatorCanvas:alpha(visible and 1.0 or 0.35) end
+        end)
+    end
+end
+
+local function hideIndicator(labelText, duration, textColor)
+    if blinkTimer      then blinkTimer:stop();        blinkTimer      = nil end
+    if durationTimer   then durationTimer:stop();     durationTimer   = nil end
+    if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
+
+    if labelText then
+        showIndicator(labelText, false, textColor)
+        hs.timer.doAfter(duration or 1.5, function()
+            if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
+        end)
+    end
+end
+
+-- ── Hotkey ───────────────────────────────────────────────────────────────────
 hs.hotkey.bind(mods, key, function()
-    if not isRecording then
-        isRecording = true
-        hs.alert.show("🎤 Recording…")
-        recordTask = hs.task.new(ffmpegPath, nil,
-            { "-y", "-f", "avfoundation", "-i", ":0", "-ar", "16000", "-ac", "1", audioFile })
-        recordTask:start()
+    local now = hs.timer.secondsSinceEpoch()
+    if now - lastTrigger < 0.5 then return end
+    lastTrigger = now
+
+    if not recording then
+        indicatorPos = hs.mouse.absolutePosition()
+        showIndicator("● 0:00", true, recordingColor)
+
+        recordingStart = hs.timer.secondsSinceEpoch()
+        durationTimer = hs.timer.doEvery(1.0, function()
+            local elapsed = math.floor(hs.timer.secondsSinceEpoch() - recordingStart)
+            local mins = math.floor(elapsed / 60)
+            local secs = elapsed % 60
+            showIndicator(string.format("● %d:%02d", mins, secs), true, recordingColor)
+        end)
+
+        ffmpegTask = hs.task.new(ffmpegPath, nil,
+            { "-y", "-f", "avfoundation", "-i", "none:" .. audioIdx,
+              "-ac", "1", "-ar", "16000", audioFile })
+        ffmpegTask:start()
+        recording = true
+
     else
-        isRecording = false
-        if recordTask then recordTask:terminate() end
-        hs.alert.show("⏳ Transcribing…")
-        hs.timer.doAfter(0.3, function()
-            hs.task.new(nodePath, function(code, out, err)
-                if code == 0 and out and #out:gsub("%s+", "") > 0 then
-                    hs.pasteboard.setContents(out:gsub("%s+$", ""))
+        hideIndicator("transcribing...", 8, transcribingColor)
+
+        if ffmpegTask and ffmpegTask:isRunning() then ffmpegTask:terminate() end
+        ffmpegTask = nil
+        recording  = false
+
+        hs.timer.doAfter(0.5, function()
+            local attrs = hs.fs.attributes(audioFile)
+            if not attrs or attrs.size < 1000 then
+                hideIndicator("nothing recorded", 2, defaultColor)
+                return
+            end
+
+            local previousClipboard = hs.pasteboard.getContents()
+
+            hs.task.new(nodePath, function(exitCode, stdOut, stdErr)
+                if exitCode == 0 and stdOut and #stdOut:gsub("%s+", "") > 0 then
+                    hideIndicator("done ✓", 1.5, doneColor)
+                    hs.pasteboard.setContents(stdOut:gsub("%s+$", ""))
                     hs.eventtap.keyStroke({"cmd"}, "v")
+                    hs.timer.doAfter(0.3, function()
+                        hs.pasteboard.setContents(previousClipboard or "")
+                    end)
                 else
-                    hs.alert.show("❌ Transcription failed")
-                    if err and #err > 0 then print("QuickGroq error: " .. err) end
+                    hideIndicator("❌ failed", 3, defaultColor)
+                    if stdErr and #stdErr > 0 then print("QuickGroq error: " .. stdErr) end
                 end
             end, { scriptPath }):start()
         end)
     end
 end)
 
-hs.alert.show("⚡ QuickGroq ready")
+-- ── Reload shortcut ──────────────────────────────────────────────────────────
+hs.hotkey.bind({"cmd", "shift"}, "R", function()
+    hs.reload()
+end)
 LUAEOF
 
-# ── 7. Reload Hammerspoon & Open Accessibility Prefs ───────────────────────
+# ── 8. Reload Hammerspoon & Open Accessibility Prefs ───────────────────────
 open -a Hammerspoon 2>/dev/null || true
 sleep 2
 osascript -e 'tell application "Hammerspoon" to execute lua code "hs.reload()"' 2>/dev/null || true
