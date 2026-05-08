@@ -26,7 +26,7 @@ Choose your operating system below. The installer handles downloading the necess
 1. Open the **Terminal** app. (Press `Command + Space` on your keyboard, type `Terminal`, and hit Enter).
 2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the Terminal window, and hit Enter:
    ```bash
-   curl -sSL 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh' | bash
+   curl -sSL 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh' | GROQ_API_KEY='gsk_yourkey' bash
    ```
 3. The screen will ask for your Groq API key. Paste it in and hit Enter.
 4. **CRITICAL LAST STEP:** macOS protects your keyboard. You must give QuickGroq permission to type for you. 
