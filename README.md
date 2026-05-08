@@ -24,7 +24,7 @@ Choose your operating system below. The installer handles downloading the necess
 
 ### 🍎 For Mac Users
 1. Open the **Terminal** app. (Press `Command + Space` on your keyboard, type `Terminal`, and hit Enter).
-2. Copy the code below, paste it into the Terminal window, and hit Enter:
+2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the Terminal window, and hit Enter:
    ```bash
    curl -sSL [https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh](https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh) | bash
    ```
@@ -35,7 +35,7 @@ Choose your operating system below. The installer handles downloading the necess
 
 ### 🪟 For Windows Users
 1. Open **PowerShell**. (Press the `Windows` key, type `PowerShell`, and hit Enter).
-2. Copy the code below, paste it into the PowerShell window, and hit Enter:
+2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the PowerShell window, and hit Enter:
    ```powershell
    irm [https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1](https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1) | iex
    ```
