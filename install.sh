@@ -2,8 +2,6 @@
 
 set -e
 
-exec </dev/tty
-
 echo ""
 echo "⚡ QuickGroq Installer for macOS"
 echo "--------------------------------"
@@ -44,29 +42,37 @@ if [ ! -d "/Applications/Hammerspoon.app" ]; then
     brew install --cask hammerspoon || true
 fi
 
-# ── 2. Configuration Setup ──────────────────────────────────────────────────
-echo ""
-echo "Get a free Groq API key at https://console.groq.com"
-read -r -p "Paste your API key: " API_KEY
+# ── 2. API Key ───────────────────────────────────────────────────────────────
+# Accept via environment variable (preferred when piping via curl | bash)
+# Usage: curl -sSL '...' | GROQ_API_KEY='gsk_yourkey' bash
+API_KEY="${GROQ_API_KEY:-}"
 
 if [ -z "$API_KEY" ]; then
-    echo "❌ No API key entered. Exiting."
+    echo ""
+    echo "❌ No API key found."
+    echo ""
+    echo "Please run the installer like this:"
+    echo ""
+    echo "  curl -sSL 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh' | GROQ_API_KEY='gsk_yourkey' bash"
+    echo ""
+    echo "Get your free key at https://console.groq.com"
     exit 1
 fi
 
 # ── 3. Hotkey Selection ─────────────────────────────────────────────────────
-echo ""
-echo "Choose your Mac hotkey:"
-echo "1) Command + Shift + D (Default)"
-echo "2) Option + Shift + D"
-echo "3) Command + Shift + 0"
-read -r -p "Enter 1, 2, or 3 [1]: " HOTKEY_CHOICE
+# Accept via environment variable, default to cmd+shift+d
+# Usage: ... | GROQ_API_KEY='gsk_...' QUICKGROQ_HOTKEY=2 bash
+HOTKEY_CHOICE="${QUICKGROQ_HOTKEY:-1}"
 
 case "$HOTKEY_CHOICE" in
     2) HS_MODS='["alt", "shift"]'; HS_KEY="d" ;;
     3) HS_MODS='["cmd", "shift"]'; HS_KEY="0" ;;
     *) HS_MODS='["cmd", "shift"]'; HS_KEY="d" ;;
 esac
+
+echo ""
+echo "Using hotkey: $([ "$HOTKEY_CHOICE" = "2" ] && echo 'Option+Shift+D' || [ "$HOTKEY_CHOICE" = "3" ] && echo 'Cmd+Shift+0' || echo 'Cmd+Shift+D')"
+echo "(Set QUICKGROQ_HOTKEY=2 or 3 to change)"
 
 # ── 4. Write Config ─────────────────────────────────────────────────────────
 mkdir -p ~/quickgroq
