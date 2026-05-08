@@ -1,6 +1,5 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
-#Warn VarUnset, Off
 InstallKeybdHook()
 
 ; ── Kill any other QuickGroq.ahk instances ───────────────────────────────────
@@ -13,14 +12,13 @@ for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process where 
 
 global IsRecording := false
 global ClipVault   := ""
-global UserProfile := EnvGet("USERPROFILE")
 
-; ── Installer dynamically sets the hotkey on the line below ──────────────────
+; ── Installer patches hotkey and WorkDir before this runs ────────────────────
 ~^+d::
 {
-    global IsRecording, ClipVault, UserProfile
+    global IsRecording, ClipVault
 
-    WorkDir    := UserProfile "\quickgroq"
+    WorkDir    := A_UserProfile "\quickgroq"
     AudioFile  := WorkDir "\audio.wav"
     NodeScript := WorkDir "\dictate.js"
     OutFile    := WorkDir "\out.txt"
@@ -73,9 +71,9 @@ global UserProfile := EnvGet("USERPROFILE")
 
         NodeExe := "node"
         for _, candidate in ["C:\Program Files\nodejs\node.exe",
-                              UserProfile "\AppData\Roaming\nvm\current\node.exe",
+                              A_UserProfile "\AppData\Roaming\nvm\current\node.exe",
                               "C:\Program Files (x86)\nodejs\node.exe",
-                              UserProfile "\scoop\apps\nodejs\current\node.exe"] {
+                              A_UserProfile "\scoop\apps\nodejs\current\node.exe"] {
             if FileExist(candidate) {
                 NodeExe := candidate
                 break
