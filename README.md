@@ -1,122 +1,74 @@
-# 🎙️ HammerWhisper
+# ⚡ QuickGroq
 
-Free voice dictation for Mac. Press a hotkey, speak, press again — your words appear wherever you're typing.
+Free, cross-platform voice dictation for Mac and Windows. Press a hotkey, speak, press again — your words appear wherever your cursor is.
 
-No subscription. Works in any app. Powered by Groq's free Whisper API.
+No subscription. Works in any app (Word, Chrome, Slack, etc.). Powered by Groq's lightning-fast, free Whisper AI.
 
 ---
 
-## What you need before starting
+## 🛑 What you need before starting
 
-A free Groq API key — this is what powers the speech-to-text. It's free, no credit card needed.
+To make this work, QuickGroq needs a "key" to access the AI that turns your speech into text. We use Groq because it is incredibly fast and completely free. 
 
-**Get your free key:**
+**How to get your free Groq API key:**
 1. Go to [console.groq.com](https://console.groq.com)
-2. Sign up with Google or email
-3. Click **API Keys** → **Create API Key**
-4. Copy the key (it starts with `gsk_`)
-
-That's the only thing you need to grab yourself. Everything else is handled automatically.
+2. Sign in with Google or your email. (No credit card is required).
+3. On the left menu, click **API Keys**, then click **Create API Key**.
+4. Copy the long string of text it gives you (it will start with `gsk_`). Keep this handy; the installer will ask for it!
 
 ---
 
-## Install
+## 🛠️ Installation
 
-Open the **Terminal** app on your Mac and paste this:
+Choose your operating system below. The installer handles downloading the necessary background tools (like Node.js and shortcut managers) automatically.
 
-```bash
-curl -sSL https://raw.githubusercontent.com/jbuch84/HammerWhisper/main/install.sh | bash
-```
+### 🍎 For Mac Users
+1. Open the **Terminal** app. (Press `Command + Space` on your keyboard, type `Terminal`, and hit Enter).
+2. Copy the code below, paste it into the Terminal window, and hit Enter:
+   ```bash
+   curl -sSL [https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh](https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.sh) | bash
+   ```
+3. The screen will ask for your Groq API key. Paste it in and hit Enter.
+4. **CRITICAL LAST STEP:** macOS protects your keyboard. You must give QuickGroq permission to type for you. 
+   * Open **System Settings** → **Privacy & Security** → **Accessibility**.
+   * Find **Hammerspoon** in the list and toggle the switch to **ON**.
 
-> **Don't have Terminal?** Press `⌘Space`, type `Terminal`, hit Enter.
-
-The installer will ask you a few questions:
-1. Your Groq API key (paste the `gsk_...` key you copied above)
-2. Your preferred hotkey (just press Enter to use the default `⌘⇧D`)
-
-That's it. The installer handles most of the setup automatically, but macOS will still require a couple of permissions the first time.
-
----
-
-## One thing you need to do manually
-
-After the install finishes, macOS requires you to give Hammerspoon permission to type on your behalf:
-
-1. Open **System Settings**
-2. Go to **Privacy & Security → Accessibility**
-3. Find **Hammerspoon** and turn it on
-
-You'll only ever need to do this once. **If the hotkey does nothing, this is almost always why.**
+### 🪟 For Windows Users
+1. Open **PowerShell**. (Press the `Windows` key, type `PowerShell`, and hit Enter).
+2. Copy the code below, paste it into the PowerShell window, and hit Enter:
+   ```powershell
+   irm [https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1](https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1) | iex
+   ```
+3. The screen will ask for your Groq API key. Paste it in and hit Enter.
 
 ---
 
-## Make Hammerspoon launch at login
+## 🎙️ How to Use QuickGroq
 
-Hammerspoon needs to be running for your hotkey to work. If you restart your Mac and it isn't in your menu bar, HammerWhisper will silently stop working.
+Once installed, QuickGroq runs invisibly in the background. It will automatically launch itself every time you restart your computer.
 
-**Set it to launch at login:**
-1. Open **Hammerspoon** from your Applications folder
-2. Click the 🔨 icon in the menu bar
-3. Click **Preferences**
-4. Check **Launch Hammerspoon at login**
+1. Click into any text box where you want to type (an email, a code editor, a chat box).
+2. Press your activation hotkey:
+   * **Mac:** `Command + Shift + D`
+   * **Windows:** `Ctrl + Shift + D`
+3. A small indicator will appear near your mouse. Start speaking naturally. 
+4. When you are finished, press the hotkey again.
+5. Wait a second or two, and your transcribed text will magically type itself out. 
 
-This only needs to be done once.
-
----
-
-## How to use it
-
-1. Click anywhere you want to type (a text box, email, Google Doc, anywhere)
-2. Press your hotkey (`⌘⇧D` by default)
-3. A small indicator appears near your cursor — start speaking
-4. Press your hotkey again when you're done
-5. Your words are typed automatically
+*(Note: QuickGroq safely backs up whatever you previously had copied to your clipboard, pastes your new text, and then restores your clipboard automatically!)*
 
 ---
 
-## How to change your settings
+## 🛟 Troubleshooting & FAQ
 
-Your settings are saved in a file at `~/hammerwhisper/config.json`. You can open it in any text editor to change your API key or switch to a different speech-to-text provider.
+**"I pressed the hotkey and nothing happened!"**
+* **Mac:** Look for a small hammer icon (🔨) in your top menu bar. If it's not there, open your Applications folder and launch **Hammerspoon**. Also, double-check that you enabled Hammerspoon in your Mac's Accessibility settings.
+* **Windows:** Look for a green 'H' icon in your System Tray (bottom right of your screen, near the clock). If it's not there, press the Windows key, type `QuickGroq.ahk`, and run it.
 
-To change your hotkey, run the installer again.
+**"It says it's transcribing, but no text ever appears."**
+This usually means your Groq API key was entered incorrectly, or you ran out of free credits (rare, but possible if you dictate a novel in one day). 
+* **Fix:** Open your user folder (e.g., `C:\Users\YourName\quickgroq` or `~/quickgroq/`), open the `config.json` file in any text editor, and ensure your `apiKey` is correct.
 
----
-
-## Uninstall
-
-```bash
-rm -rf ~/hammerwhisper
-rm ~/.hammerspoon/init.lua
-```
-
-Then go to **System Settings → Privacy & Security → Accessibility** and remove Hammerspoon.
-
----
-
-## Is it really free?
-
-Yes. Groq gives you more than enough free usage for everyday dictation — no credit card, no hidden limits for normal use. If you ever want to use a different provider like OpenAI, you can swap it in `config.json`.
-
----
-
-## Something not working?
-
-**Run the self-check first:**
-
-```bash
-~/hammerwhisper/dictate --check
-```
-
-This verifies every component and tells you exactly what's wrong.
-
-**Common issues:**
-
-| Symptom | Fix |
-|---|---|
-| Hotkey does nothing | Grant Hammerspoon Accessibility permission (see above) |
-| Works today, broken after restart | Enable "Launch at login" in Hammerspoon Preferences |
-| macOS blocked Hammerspoon | System Settings → Privacy & Security → click **Open Anyway** |
-| "error" flash but no text typed | Click 🔨 in menu bar → **Open Console** for details |
-| Intel Mac not recording audio | Check that ffmpeg is at `/usr/local/bin/ffmpeg` |
-
-For anything else, open the Hammerspoon console: click the 🔨 icon in the menu bar → **Open Console**.
+**"How do I uninstall it?"**
+* **Mac:** Delete the `~/quickgroq` folder and the `~/.hammerspoon` folder. You can also uninstall Hammerspoon from your Applications.
+* **Windows:** Delete the `C:\Users\YourName\quickgroq` folder, and remove the QuickGroq shortcut from your Windows Startup folder (Press `Win + R`, type `shell:startup`, and delete the file).
