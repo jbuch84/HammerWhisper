@@ -3,34 +3,64 @@ $ErrorActionPreference = "Stop"
 Write-Host "`n⚡ QuickGroq Installer for Windows" -ForegroundColor Cyan
 Write-Host "---------------------------------"
 
+# ── 0. Check for winget ───────────────────────────────────────────────────────
+if (-not (Get-Command "winget" -ErrorAction SilentlyContinue)) {
+    Write-Host "❌ winget not found. Please update Windows or install the App Installer from the Microsoft Store." -ForegroundColor Red
+    Write-Host "   Then re-run this installer."
+    exit 1
+}
+
 # ── 1. Check for AutoHotkey ──────────────────────────────────────────────────
-if (-not (Get-Command "AutoHotkey.exe" -ErrorAction SilentlyContinue) -and -not (Get-Command "AutoHotkey64.exe" -ErrorAction SilentlyContinue)) {
+if (-not (Get-Command "AutoHotkey.exe"   -ErrorAction SilentlyContinue) -and
+    -not (Get-Command "AutoHotkey64.exe" -ErrorAction SilentlyContinue)) {
     Write-Host "Installing AutoHotkey v2..."
     winget install AutoHotkey.AutoHotkey --silent --accept-package-agreements --accept-source-agreements
 }
 
-# ── 2. Check for Node.js ─────────────────────────────────────────────────────
-if (-not (Get-Command "node" -ErrorAction SilentlyContinue)) {
+# ── 2. Check for Node.js (v18+ required) ────────────────────────────────────
+$needsNode = $true
+if (Get-Command "node" -ErrorAction SilentlyContinue) {
+    $nodeMajor = [int](node -e "process.stdout.write(process.version.slice(1).split('.')[0])")
+    if ($nodeMajor -ge 18) {
+        $needsNode = $false
+    } else {
+        Write-Host "⚠️  Node.js v$nodeMajor found but v18+ is required. Upgrading..." -ForegroundColor Yellow
+        winget upgrade OpenJS.NodeJS --silent --accept-package-agreements --accept-source-agreements
+        $needsNode = $false
+    }
+}
+if ($needsNode) {
     Write-Host "Installing Node.js..."
     winget install OpenJS.NodeJS --silent --accept-package-agreements --accept-source-agreements
 }
 
+# Refresh PATH so node is available in this session without reopening PowerShell
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", "Machine") + ";" +
+            [System.Environment]::GetEnvironmentVariable("Path", "User")
+
+# ── 3. Create install directory ──────────────────────────────────────────────
 $InstallDir = "$env:USERPROFILE\quickgroq"
 if (-not (Test-Path $InstallDir)) {
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 }
 
-# ── 3. API Key Setup ─────────────────────────────────────────────────────────
+# ── 4. API Key Setup ─────────────────────────────────────────────────────────
 Write-Host "`nGet a free Groq API key at https://console.groq.com"
 $ApiKey = Read-Host "Paste your API key"
 
 if ([string]::IsNullOrWhiteSpace($ApiKey)) {
     Write-Host "❌ No API key entered. Exiting." -ForegroundColor Red
-    exit
+    exit 1
 }
 
-# ── 4. Hotkey Selection ──────────────────────────────────────────────────────
-Write-Host "`nChoose your Windows hotkey modifier:"
+if (-not $ApiKey.StartsWith("gsk_")) {
+    Write-Host "⚠️  This key doesn't look like a Groq API key (should start with 'gsk_')." -ForegroundColor Yellow
+    $confirm = Read-Host "Continue anyway? (y/n)"
+    if ($confirm -ne "y") { exit 1 }
+}
+
+# ── 5. Hotkey Selection ──────────────────────────────────────────────────────
+Write-Host "`nChoose your Windows hotkey:"
 Write-Host "1) Ctrl + Shift + D (Default)"
 Write-Host "2) Alt + Shift + D"
 Write-Host "3) Ctrl + Alt + 0"
@@ -42,42 +72,39 @@ $HotkeyString = switch ($Choice) {
     Default { "^+d" }
 }
 
-# ── 5. Create Config (Saving Hotkey for AHK to read) ─────────────────────────
+# ── 6. Create Config ──────────────────────────────────────────────────────────
 $ConfigJson = @{
-    apiKey  = $ApiKey
-    apiUrl  = "https://api.groq.com/openai/v1/audio/transcriptions"
-    model   = "whisper-large-v3"
-    hotkey  = $HotkeyString
+    apiKey = $ApiKey
+    apiUrl = "https://api.groq.com/openai/v1/audio/transcriptions"
+    model  = "whisper-large-v3"
+    hotkey = $HotkeyString
 } | ConvertTo-Json
 
-Set-Content -Path "$InstallDir\config.json" -Value $ConfigJson
+Set-Content -Path "$InstallDir\config.json" -Value $ConfigJson -Encoding UTF8
 
-# ── 6. Download Files ────────────────────────────────────────────────────────
+# ── 7. Download Files ────────────────────────────────────────────────────────
 Write-Host "`nDownloading QuickGroq files..."
 $RepoUrl = "https://raw.githubusercontent.com/jbuch84/QuickGroq/main"
 
-# Download core engine
-Invoke-WebRequest -Uri "$RepoUrl/dictate.js" -OutFile "$InstallDir\dictate.js"
-
-# Download AHK script
+Invoke-WebRequest -Uri "$RepoUrl/dictate.js"    -OutFile "$InstallDir\dictate.js"
 Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.ahk"
 
-# ── 7. Startup Setup ─────────────────────────────────────────────────────────
+# ── 8. Startup Setup ─────────────────────────────────────────────────────────
 Write-Host "Setting up automatic launch..."
 $StartupFolder = [Environment]::GetFolderPath('Startup')
-$WshShell = New-Object -ComObject WScript.Shell
-$Shortcut = $WshShell.CreateShortcut("$StartupFolder\QuickGroq.lnk")
+$WshShell  = New-Object -ComObject WScript.Shell
+$Shortcut  = $WshShell.CreateShortcut("$StartupFolder\QuickGroq.lnk")
 $Shortcut.TargetPath = "$InstallDir\QuickGroq.ahk"
 $Shortcut.Save()
 
-# ── 8. Final Disclosure ──────────────────────────────────────────────────────
+# ── 9. Summary ───────────────────────────────────────────────────────────────
 Write-Host "`n✅ QuickGroq installed successfully!" -ForegroundColor Green
 Write-Host "--------------------------------------------------"
 Write-Host "📂 Installation Folder: $InstallDir"
-Write-Host "⚙️  Config File: $InstallDir\config.json"
-Write-Host "🚀 Startup Shortcut: $StartupFolder\QuickGroq.lnk"
+Write-Host "⚙️  Config File:         $InstallDir\config.json"
+Write-Host "🚀 Startup Shortcut:    $StartupFolder\QuickGroq.lnk"
 Write-Host "--------------------------------------------------"
-Write-Host "You can change your hotkey later by editing the config.json file."
+Write-Host "You can change your hotkey later by editing config.json."
 
 # Launch the script
 Invoke-Item "$InstallDir\QuickGroq.ahk"
