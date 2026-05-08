@@ -13,7 +13,7 @@ for proc in ComObjGet("winmgmts:").ExecQuery("Select * from Win32_Process where 
 global IsRecording := false
 global ClipVault   := ""
 
-; ── Installer patches hotkey and WorkDir before this runs ────────────────────
+; ── Installer patches hotkey and paths before this runs ──────────────────────
 ~^+d::
 {
     global IsRecording, ClipVault
@@ -69,11 +69,12 @@ global ClipVault   := ""
         if FileExist(ErrFile)
             FileDelete(ErrFile)
 
+        ; Node.js detection — installer patches NVM_PATH and SCOOP_PATH placeholders
         NodeExe := "node"
         for _, candidate in ["C:\Program Files\nodejs\node.exe",
                               "C:\Program Files (x86)\nodejs\node.exe",
-                              "C:\Users\" A_UserProfile "\AppData\Roaming\nvm\current\node.exe",
-                              "C:\Users\" A_UserProfile "\scoop\apps\nodejs\current\node.exe"] {
+                              "NVM_PATH",
+                              "SCOOP_PATH"] {
             if FileExist(candidate) {
                 NodeExe := candidate
                 break
