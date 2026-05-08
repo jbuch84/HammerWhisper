@@ -279,7 +279,7 @@ hs.hotkey.bind(mods, key, function()
             local previousClipboard = hs.pasteboard.getContents()
 
             hs.task.new(nodePath, function(exitCode, stdOut, stdErr)
-                if exitCode == 0 and stdOut and #stdOut:gsub("%s+", "") > 0 then
+                if exitCode == 0 then
                     hideIndicator("done ✓", 1.5, doneColor)
                     hs.pasteboard.setContents(stdOut:gsub("%s+$", ""))
                     hs.eventtap.keyStroke({"cmd"}, "v")
