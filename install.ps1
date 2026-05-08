@@ -80,7 +80,7 @@ $HotkeyString = switch ($Choice) {
     Default { "^+d" }
 }
 
-# ── 6. Create Config ──────────────────────────────────────────────────────────
+# ── 6. Create Config ─────────────────────────────────────────────────────────
 $ConfigJson = @{
     apiKey = $ApiKey
     apiUrl = "https://api.groq.com/openai/v1/audio/transcriptions"
@@ -101,12 +101,15 @@ $RepoUrl = "https://raw.githubusercontent.com/jbuch84/QuickGroq/main"
 Invoke-WebRequest -Uri "$RepoUrl/dictate.js"    -OutFile "$InstallDir\dictate.js"
 Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.ahk"
 
-# ── 8. Patch hotkey and WorkDir into AHK file ────────────────────────────────
+# ── 8. Patch hotkey and paths into AHK file ──────────────────────────────────
+$NvmPath   = "$env:USERPROFILE\AppData\Roaming\nvm\current\node.exe"
+$ScoopPath = "$env:USERPROFILE\scoop\apps\nodejs\current\node.exe"
+
 $ahkContent = Get-Content "$InstallDir\QuickGroq.ahk" -Raw
-$ahkContent = $ahkContent -replace '~\^\+d::', "~$HotkeyString`::"
+$ahkContent = $ahkContent -replace '~\^\+d::',  "~$HotkeyString`::"
 $ahkContent = $ahkContent -replace 'A_UserProfile "\\quickgroq"', "`"$InstallDir`""
-$ahkContent = $ahkContent -replace 'A_UserProfile "\\\\AppData\\\\Roaming\\\\nvm\\\\current\\\\node.exe"', "`"$env:USERPROFILE\AppData\Roaming\nvm\current\node.exe`""
-$ahkContent = $ahkContent -replace 'A_UserProfile "\\\\scoop\\\\apps\\\\nodejs\\\\current\\\\node.exe"', "`"$env:USERPROFILE\scoop\apps\nodejs\current\node.exe`""
+$ahkContent = $ahkContent -replace 'NVM_PATH',   $NvmPath
+$ahkContent = $ahkContent -replace 'SCOOP_PATH', $ScoopPath
 [System.IO.File]::WriteAllText(
     "$InstallDir\QuickGroq.ahk",
     $ahkContent,
@@ -123,7 +126,7 @@ $Shortcut.TargetPath       = "$InstallDir\QuickGroq.ahk"
 $Shortcut.WorkingDirectory = $InstallDir
 $Shortcut.Save()
 
-# ── 10. Summary ───────────────────────────────────────────────────────────────
+# ── 10. Summary ──────────────────────────────────────────────────────────────
 Write-Host "`n✅ QuickGroq installed successfully!" -ForegroundColor Green
 Write-Host "--------------------------------------------------"
 Write-Host "📂 Installation Folder: $InstallDir"
