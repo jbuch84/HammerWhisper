@@ -88,7 +88,6 @@ $ConfigJson = @{
     hotkey = $HotkeyString
 } | ConvertTo-Json
 
-# Write without BOM to avoid JSON parse issues on older PowerShell versions
 [System.IO.File]::WriteAllText(
     "$InstallDir\config.json",
     $ConfigJson,
@@ -102,15 +101,16 @@ $RepoUrl = "https://raw.githubusercontent.com/jbuch84/QuickGroq/main"
 Invoke-WebRequest -Uri "$RepoUrl/dictate.js"    -OutFile "$InstallDir\dictate.js"
 Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.ahk"
 
-# ── 8. Patch hotkey into AHK file ────────────────────────────────────────────
+# ── 8. Patch hotkey and WorkDir into AHK file ────────────────────────────────
 $ahkContent = Get-Content "$InstallDir\QuickGroq.ahk" -Raw
 $ahkContent = $ahkContent -replace '~\^\+d::', "~$HotkeyString`::"
+$ahkContent = $ahkContent -replace 'A_UserProfile "\\quickgroq"', "`"$InstallDir`""
 [System.IO.File]::WriteAllText(
     "$InstallDir\QuickGroq.ahk",
     $ahkContent,
     [System.Text.UTF8Encoding]::new($false)
 )
-Write-Host "✅ Hotkey set to: $HotkeyString" -ForegroundColor Green
+Write-Host "✅ Hotkey and paths configured." -ForegroundColor Green
 
 # ── 9. Startup Setup ─────────────────────────────────────────────────────────
 Write-Host "Setting up automatic launch..."
