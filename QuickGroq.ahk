@@ -17,6 +17,8 @@ global ClipVault   := ""
 ~^+d::
 {
     global IsRecording, ClipVault
+    local WorkDir, AudioFile, NodeScript, OutFile, ErrFile, NodeExe, audioSize
+    local result, transcription, errMsg, candidate
 
     WorkDir    := A_UserProfile "\quickgroq"
     AudioFile  := WorkDir "\audio.wav"
