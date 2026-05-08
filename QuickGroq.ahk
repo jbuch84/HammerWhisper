@@ -42,12 +42,12 @@ global ClipVault   := ""
         IsRecording := true
         ClipVault   := ClipboardAll()
 
-        ToolTip("🎤 Recording… (Press hotkey to stop)")
+        ToolTip("Recording… (Press hotkey to stop)")
         DllCall("winmm\mciSendString", "Str", "record capture", "Str", "", "UInt", 0, "Ptr", 0)
 
     } else {
         IsRecording := false
-        ToolTip("⏳ Transcribing…")
+        ToolTip("Transcribing…")
 
         DllCall("winmm\mciSendString", "Str", "save capture " . AudioFile, "Str", "", "UInt", 0, "Ptr", 0)
         DllCall("winmm\mciSendString", "Str", "stop capture",  "Str", "", "UInt", 0, "Ptr", 0)
@@ -93,7 +93,7 @@ global ClipVault   := ""
         A_Clipboard := ClipVault
         ClipVault   := ""
 
-        ToolTip("✅ Done!")
+        ToolTip("Done!")
         SetTimer(() => ToolTip(), -2000)
     }
 }
