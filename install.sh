@@ -56,14 +56,10 @@ fi
 # ── Detect microphone device index ──────────────────────────────────────────
 echo "Detecting microphone..."
 FFMPEG_AUDIO_IDX=$("$FFMPEG_PATH" -f avfoundation -list_devices true -i "" 2>&1 | \
-    awk '/AVFoundation audio devices/,0 {
-        if (match($0, /\[([0-9]+)\]/, arr)) {
-            if ($0 !~ /Teams|Zoom|BlackHole|Immersed|Virtual|Aggregate|Display|Soundflower/) {
-                print arr[1]
-                exit
-            }
-        }
-    }')
+    grep -A 99 "AVFoundation audio devices" | \
+    grep -v "Teams\|Zoom\|BlackHole\|Immersed\|Virtual\|Aggregate\|Display\|Soundflower" | \
+    grep -m 1 "\[" | \
+    sed 's/.*\[\([0-9]*\)\].*/\1/')
 FFMPEG_AUDIO_IDX="${FFMPEG_AUDIO_IDX:-0}"
 echo "Using audio device index: $FFMPEG_AUDIO_IDX"
 
@@ -174,8 +170,8 @@ local recordingStart  = nil
 local lastTrigger     = 0
 
 local function showIndicator(labelText, pulse, textColor)
-    if blinkTimer      then blinkTimer:stop();             blinkTimer      = nil end
-    if indicatorCanvas then indicatorCanvas:delete();      indicatorCanvas = nil end
+    if blinkTimer      then blinkTimer:stop();        blinkTimer      = nil end
+    if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
 
     local color = textColor or defaultColor
     local w = math.max(52, #labelText * 8 + 24)
