@@ -280,23 +280,33 @@ hs.hotkey.bind(mods, key, function()
             end
 
             local previousClipboard = hs.pasteboard.getContents()
+            local stdOutBuffer = ""
 
-            hs.task.new(nodePath, function(exitCode, stdOut, stdErr)
-                if exitCode == 0 then
-                    local trimmed = stdOut:gsub("%s+$", "")
-                    hideIndicator("done ✓", 1.5, doneColor)
-                    hs.pasteboard.setContents(trimmed)
-                    hs.timer.doAfter(0.1, function()
-                        hs.eventtap.keyStroke({"cmd"}, "v")
-                        hs.timer.doAfter(1.5, function()
-                            hs.pasteboard.setContents(previousClipboard or "")
+            hs.task.new(nodePath,
+                function(exitCode, _, stdErr)
+                    -- completion callback — read from buffer, not stdOut param
+                    if exitCode == 0 then
+                        local trimmed = stdOutBuffer:gsub("%s+$", "")
+                        hideIndicator("done ✓", 1.5, doneColor)
+                        hs.pasteboard.setContents(trimmed)
+                        hs.timer.doAfter(0.1, function()
+                            hs.eventtap.keyStroke({"cmd"}, "v")
+                            hs.timer.doAfter(1.5, function()
+                                hs.pasteboard.setContents(previousClipboard or "")
+                            end)
                         end)
-                    end)
-                else
-                    hideIndicator("❌ failed", 3, defaultColor)
-                    if stdErr and #stdErr > 0 then print("QuickGroq error: " .. stdErr) end
-                end
-            end, { scriptPath }):start()
+                    else
+                        hideIndicator("❌ failed", 3, defaultColor)
+                        if stdErr and #stdErr > 0 then print("QuickGroq error: " .. stdErr) end
+                    end
+                end,
+                function(_, chunk, _)
+                    -- streaming callback — accumulate stdout
+                    if chunk then stdOutBuffer = stdOutBuffer .. chunk end
+                    return true
+                end,
+                { scriptPath }
+            ):start()
         end)
     end
 end)
