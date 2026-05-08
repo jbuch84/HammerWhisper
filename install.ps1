@@ -102,7 +102,17 @@ $RepoUrl = "https://raw.githubusercontent.com/jbuch84/QuickGroq/main"
 Invoke-WebRequest -Uri "$RepoUrl/dictate.js"    -OutFile "$InstallDir\dictate.js"
 Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.ahk"
 
-# ── 8. Startup Setup ─────────────────────────────────────────────────────────
+# ── 8. Patch hotkey into AHK file ────────────────────────────────────────────
+$ahkContent = Get-Content "$InstallDir\QuickGroq.ahk" -Raw
+$ahkContent = $ahkContent -replace '~\^\+d::', "~$HotkeyString`::"
+[System.IO.File]::WriteAllText(
+    "$InstallDir\QuickGroq.ahk",
+    $ahkContent,
+    [System.Text.UTF8Encoding]::new($false)
+)
+Write-Host "✅ Hotkey set to: $HotkeyString" -ForegroundColor Green
+
+# ── 9. Startup Setup ─────────────────────────────────────────────────────────
 Write-Host "Setting up automatic launch..."
 $StartupFolder = [Environment]::GetFolderPath('Startup')
 $WshShell  = New-Object -ComObject WScript.Shell
@@ -111,7 +121,7 @@ $Shortcut.TargetPath       = "$InstallDir\QuickGroq.ahk"
 $Shortcut.WorkingDirectory = $InstallDir
 $Shortcut.Save()
 
-# ── 9. Summary ───────────────────────────────────────────────────────────────
+# ── 10. Summary ───────────────────────────────────────────────────────────────
 Write-Host "`n✅ QuickGroq installed successfully!" -ForegroundColor Green
 Write-Host "--------------------------------------------------"
 Write-Host "📂 Installation Folder: $InstallDir"
