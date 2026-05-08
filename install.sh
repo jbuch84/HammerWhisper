@@ -67,7 +67,7 @@ for line in lines.splitlines():
         in_audio = True
         continue
     if in_audio:
-        m = re.search(r'\[(\d+)\]', line)
+        m = re.search(r'\\[(\\d+)\\]', line)
         if m:
             name = line.lower()
             if not any(s in name for s in skip):
@@ -226,14 +226,17 @@ local function showIndicator(labelText, pulse, textColor)
 end
 
 local function hideIndicator(labelText, duration, textColor)
-    if blinkTimer      then blinkTimer:stop();        blinkTimer      = nil end
-    if durationTimer   then durationTimer:stop();     durationTimer   = nil end
+    if blinkTimer    then blinkTimer:stop();    blinkTimer    = nil end
+    if durationTimer then durationTimer:stop(); durationTimer = nil end
     if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
 
     if labelText then
         showIndicator(labelText, false, textColor)
-        hs.timer.doAfter(duration or 1.5, function()
-            if indicatorCanvas then indicatorCanvas:delete(); indicatorCanvas = nil end
+        local canvasToHide = indicatorCanvas
+        durationTimer = hs.timer.doAfter(duration or 1.5, function()
+            if canvasToHide then canvasToHide:delete() end
+            if indicatorCanvas == canvasToHide then indicatorCanvas = nil end
+            durationTimer = nil
         end)
     end
 end
@@ -280,11 +283,14 @@ hs.hotkey.bind(mods, key, function()
 
             hs.task.new(nodePath, function(exitCode, stdOut, stdErr)
                 if exitCode == 0 then
+                    local trimmed = stdOut:gsub("%s+$", "")
                     hideIndicator("done ✓", 1.5, doneColor)
-                    hs.pasteboard.setContents(stdOut:gsub("%s+$", ""))
-                    hs.eventtap.keyStroke({"cmd"}, "v")
-                    hs.timer.doAfter(1.5, function()
-                        hs.pasteboard.setContents(previousClipboard or "")
+                    hs.pasteboard.setContents(trimmed)
+                    hs.timer.doAfter(0.1, function()
+                        hs.eventtap.keyStroke({"cmd"}, "v")
+                        hs.timer.doAfter(1.5, function()
+                            hs.pasteboard.setContents(previousClipboard or "")
+                        end)
                     end)
                 else
                     hideIndicator("❌ failed", 3, defaultColor)
