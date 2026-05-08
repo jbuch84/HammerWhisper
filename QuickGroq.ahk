@@ -4,34 +4,29 @@ InstallKeybdHook()
 
 global IsRecording := false
 global ClipVault := ""
-global WorkDir := A_Profile "\quickgroq"
-global AudioFile := WorkDir "\audio.wav"
-global NodeScript := WorkDir "\dictate.js"
-global OutFile := WorkDir "\out.txt"
 
+; The installer will replace the line below with your chosen hotkey
 ~^+d::
 {
-    global IsRecording, ClipVault, WorkDir, AudioFile, NodeScript, OutFile
+    global IsRecording, ClipVault
     
+    WorkDir := A_UserProfile "\quickgroq"
+    NodeScript := WorkDir "\dictate.js"
+    OutFile := WorkDir "\out.txt"
+
     if (!IsRecording) {
         IsRecording := true
         ClipVault := ClipboardAll()
-        
-        ToolTip("🎤 Recording... (Press Ctrl+Shift+D to stop)")
-        
-        DllCall("winmm\mciSendString", "Str", "open new type waveaudio alias capture", "Str", "", "UInt", 0, "Ptr", 0)
-        DllCall("winmm\mciSendString", "Str", "record capture", "Str", "", "UInt", 0, "Ptr", 0)
+        ToolTip("🎤 Recording...")
     } 
     else {
         IsRecording := false
         ToolTip("⏳ Transcribing...")
         
-        DllCall("winmm\mciSendString", "Str", "save capture " . AudioFile, "Str", "", "UInt", 0, "Ptr", 0)
-        DllCall("winmm\mciSendString", "Str", "close capture", "Str", "", "UInt", 0, "Ptr", 0)
-        
         if FileExist(OutFile)
             FileDelete(OutFile)
             
+        ; Run the transcription
         RunWait(A_ComSpec " /c node `"" NodeScript "`" > `"" OutFile "`"",, "Hide")
         
         if FileExist(OutFile) {
@@ -43,8 +38,9 @@ global OutFile := WorkDir "\out.txt"
             }
         }
         
-        A_Clipboard := ClipVault 
-        ClipVault := "" 
+        ; Restore original clipboard
+        A_Clipboard := ClipVault
+        ClipVault := ""
         
         ToolTip("✅ Done!")
         SetTimer () => ToolTip(), -2000 
@@ -53,6 +49,5 @@ global OutFile := WorkDir "\out.txt"
 
 ~Esc:: {
     global IsRecording := false
-    DllCall("winmm\mciSendString", "Str", "close capture", "Str", "", "UInt", 0, "Ptr", 0)
     ToolTip()
 }
