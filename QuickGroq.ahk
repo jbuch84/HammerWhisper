@@ -70,16 +70,7 @@ global ClipVault   := ""
             FileDelete(ErrFile)
 
         ; Node.js detection — installer patches NVM_PATH and SCOOP_PATH placeholders
-        NodeExe := "node"
-        for _, candidate in ["C:\Program Files\nodejs\node.exe",
-                              "C:\Program Files (x86)\nodejs\node.exe",
-                              "NVM_PATH",
-                              "SCOOP_PATH"] {
-            if FileExist(candidate) {
-                NodeExe := candidate
-                break
-            }
-        }
+        NodeExe := "NODEEXE_PATH"
 
         RunWait(A_ComSpec " /c `"" NodeExe "`" `"" NodeScript "`" > `"" OutFile "`" 2> `"" ErrFile "`"",, "Hide")
 
