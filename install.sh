@@ -55,8 +55,10 @@ fi
 
 # ── Detect microphone device index ──────────────────────────────────────────
 echo "Detecting microphone..."
-DEVICE_LIST=$("$FFMPEG_PATH" -f avfoundation -list_devices true -i "" 2>&1 || true)
-FFMPEG_AUDIO_IDX=$(echo "$DEVICE_LIST" | grep -A 99 "AVFoundation audio devices" | grep -v "Teams\|Zoom\|BlackHole\|Immersed\|Virtual\|Aggregate\|Display\|Soundflower" | grep -m 1 "\[" | sed 's/.*\[\([0-9]*\)\].*/\1/' || true)
+set +e
+DEVICE_LIST=$("$FFMPEG_PATH" -f avfoundation -list_devices true -i "" 2>&1)
+FFMPEG_AUDIO_IDX=$(echo "$DEVICE_LIST" | grep -A 99 "AVFoundation audio devices" | grep -vE "Teams|Zoom|BlackHole|Immersed|Virtual|Aggregate|Display|Soundflower" | grep -m 1 "\[" | sed 's/.*\[\([0-9]*\)\].*/\1/')
+set -e
 FFMPEG_AUDIO_IDX="${FFMPEG_AUDIO_IDX:-0}"
 echo "Using audio device index: $FFMPEG_AUDIO_IDX"
 
