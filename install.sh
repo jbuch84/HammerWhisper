@@ -283,7 +283,7 @@ hs.hotkey.bind(mods, key, function()
                     hideIndicator("done ✓", 1.5, doneColor)
                     hs.pasteboard.setContents(stdOut:gsub("%s+$", ""))
                     hs.eventtap.keyStroke({"cmd"}, "v")
-                    hs.timer.doAfter(0.3, function()
+                    hs.timer.doAfter(1.5, function()
                         hs.pasteboard.setContents(previousClipboard or "")
                     end)
                 else
