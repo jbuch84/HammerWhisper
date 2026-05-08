@@ -29,14 +29,6 @@ if ([string]::IsNullOrWhiteSpace($ApiKey)) {
     exit
 }
 
-$ConfigJson = @{
-    apiKey = $ApiKey
-    apiUrl = "https://api.groq.com/openai/v1/audio/transcriptions"
-    model = "whisper-large-v3"
-} | ConvertTo-Json
-
-Set-Content -Path "$InstallDir\config.json" -Value $ConfigJson
-
 # ── 4. Hotkey Selection ──────────────────────────────────────────────────────
 Write-Host "`nChoose your Windows hotkey modifier:"
 Write-Host "1) Ctrl + Shift + D (Default)"
@@ -44,25 +36,33 @@ Write-Host "2) Alt + Shift + D"
 Write-Host "3) Ctrl + Alt + 0"
 $Choice = Read-Host "Enter 1, 2, or 3 [1]"
 
-$HotkeyPrefix = switch ($Choice) {
+$HotkeyString = switch ($Choice) {
     "2" { "+!d" }
     "3" { "^!0" }
     Default { "^+d" }
 }
 
-# ── 5. Download and Configure Files ──────────────────────────────────────────
+# ── 5. Create Config (Saving Hotkey for AHK to read) ─────────────────────────
+$ConfigJson = @{
+    apiKey  = $ApiKey
+    apiUrl  = "https://api.groq.com/openai/v1/audio/transcriptions"
+    model   = "whisper-large-v3"
+    hotkey  = $HotkeyString
+} | ConvertTo-Json
+
+Set-Content -Path "$InstallDir\config.json" -Value $ConfigJson
+
+# ── 6. Download Files ────────────────────────────────────────────────────────
 Write-Host "`nDownloading QuickGroq files..."
 $RepoUrl = "https://raw.githubusercontent.com/jbuch84/QuickGroq/main"
 
-# Download the core engine
+# Download core engine
 Invoke-WebRequest -Uri "$RepoUrl/dictate.js" -OutFile "$InstallDir\dictate.js"
 
-# Download AHK script and replace the hotkey line dynamically
-$AHKRaw = (Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -UseBasicParsing).Content
-$AHKFinal = $AHKRaw -replace "~.*\:\:", "~$($HotkeyPrefix)::"
-Set-Content -Path "$InstallDir\QuickGroq.ahk" -Value $AHKFinal
+# Download AHK script
+Invoke-WebRequest -Uri "$RepoUrl/QuickGroq.ahk" -OutFile "$InstallDir\QuickGroq.ahk"
 
-# ── 6. Startup Setup ─────────────────────────────────────────────────────────
+# ── 7. Startup Setup ─────────────────────────────────────────────────────────
 Write-Host "Setting up automatic launch..."
 $StartupFolder = [Environment]::GetFolderPath('Startup')
 $WshShell = New-Object -ComObject WScript.Shell
@@ -70,13 +70,14 @@ $Shortcut = $WshShell.CreateShortcut("$StartupFolder\QuickGroq.lnk")
 $Shortcut.TargetPath = "$InstallDir\QuickGroq.ahk"
 $Shortcut.Save()
 
-# ── 7. Final Path Disclosure ─────────────────────────────────────────────────
+# ── 8. Final Disclosure ──────────────────────────────────────────────────────
 Write-Host "`n✅ QuickGroq installed successfully!" -ForegroundColor Green
 Write-Host "--------------------------------------------------"
 Write-Host "📂 Installation Folder: $InstallDir"
 Write-Host "⚙️  Config File: $InstallDir\config.json"
 Write-Host "🚀 Startup Shortcut: $StartupFolder\QuickGroq.lnk"
 Write-Host "--------------------------------------------------"
+Write-Host "You can change your hotkey later by editing the config.json file."
 
 # Launch the script
 Invoke-Item "$InstallDir\QuickGroq.ahk"
