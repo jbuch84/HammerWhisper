@@ -67,16 +67,16 @@ for line in lines.splitlines():
         in_audio = True
         continue
     if in_audio:
-        m = re.search(r'\\[(\\d+)\\]', line)
+        m = re.search(r'\[\d+\]\s+(.*)', line)
         if m:
-            name = line.lower()
-            if not any(s in name for s in skip):
-                print(m.group(1))
+            name = m.group(1).strip()
+            if not any(s in name.lower() for s in skip):
+                print(name)
                 break
 ")
 set -e
-FFMPEG_AUDIO_IDX="${FFMPEG_AUDIO_IDX:-0}"
-echo "Using audio device index: $FFMPEG_AUDIO_IDX"
+FFMPEG_AUDIO_IDX="${FFMPEG_AUDIO_IDX:-default}"
+echo "Using audio device: $FFMPEG_AUDIO_IDX"
 
 # ── All downloads done — pipe exhausted, stdin is now the terminal ───────────
 
