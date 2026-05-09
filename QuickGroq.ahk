@@ -49,7 +49,7 @@ global ClipVault   := ""
         IsRecording := false
         ToolTip("Transcribing…")
 
-        DllCall("winmm\mciSendString", "Str", "save capture " . AudioFile, "Str", "", "UInt", 0, "Ptr", 0)
+        DllCall("winmm\mciSendString", "Str", "save capture `"" . AudioFile . "`"", "Str", "", "UInt", 0, "Ptr", 0)
         DllCall("winmm\mciSendString", "Str", "stop capture",  "Str", "", "UInt", 0, "Ptr", 0)
         DllCall("winmm\mciSendString", "Str", "close capture", "Str", "", "UInt", 0, "Ptr", 0)
 
