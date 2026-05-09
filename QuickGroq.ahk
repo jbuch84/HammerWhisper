@@ -74,17 +74,17 @@ global ClipVault   := ""
         ; Node.js path patched by installer
         NodeExe := "NODEEXE_PATH"
 
-        RunWait(A_ComSpec " /c `"" NodeExe "`" `"" NodeScript "`" > `"" OutFile "`" 2> `"" ErrFile "`"",, "Hide")
+        RunWait(A_ComSpec ' /c ""' NodeExe '" "' NodeScript '" > "' OutFile '" 2> "' ErrFile '""',, "Hide")
 
         if FileExist(OutFile) {
-            transcription := Trim(FileRead(OutFile))
+            transcription := Trim(FileRead(OutFile, "UTF-8"))
             if (transcription != "") {
                 A_Clipboard := transcription
                 ClipWait(1)
                 Send("^v")
                 Sleep(1500)
             } else if FileExist(ErrFile) {
-                errMsg := Trim(FileRead(ErrFile))
+                errMsg := Trim(FileRead(ErrFile, "UTF-8"))
                 if (errMsg != "")
                     MsgBox("QuickGroq error:`n" . errMsg)
             }

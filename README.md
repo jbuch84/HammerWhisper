@@ -33,13 +33,13 @@ Choose your operating system below. The installer handles downloading the necess
    * Open **System Settings** → **Privacy & Security** → **Accessibility**.
    * Find **Hammerspoon** in the list and toggle the switch to **ON**.
 
-### 🪟 For Windows Users - Coming Soon, working on some bugs!
-[1. Open **PowerShell**. (Press the `Windows` key, type `PowerShell`, and hit Enter).]: # 
-[2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the PowerShell window, and hit Enter:]: # 
-[   ```powershell]: # 
-[   irm 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1' | iex]: # 
-[   ```]: # 
-[3. The screen will ask for your Groq API key. Paste it in and hit Enter.]: # 
+### 🪟 For Windows Users
+1. Open **PowerShell**. (Press the `Windows` key, type `PowerShell`, and hit Enter).
+2. Click the **Copy icon** in the top-right corner of the code box below, paste it into the PowerShell window, and hit Enter:
+   ```powershell
+   irm 'https://raw.githubusercontent.com/jbuch84/QuickGroq/main/install.ps1' | iex
+   ```
+3. The screen will ask for your Groq API key. Paste it in and hit Enter.
 
 ---
 
