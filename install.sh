@@ -53,30 +53,44 @@ if [ ! -d "/Applications/Hammerspoon.app" ]; then
     echo ""
 fi
 
-# ── Detect microphone device index ──────────────────────────────────────────
-echo "Detecting microphone..."
+# ── Detect microphone device ────────────────────────────────────────────────
+echo "Detecting microphones..."
 set +e
 DEVICE_LIST=$("$FFMPEG_PATH" -f avfoundation -list_devices true -i "" 2>&1)
-FFMPEG_AUDIO_IDX=$(echo "$DEVICE_LIST" | python3 -c "
-import sys, re
-lines = sys.stdin.read()
-in_audio = False
-skip = {'teams','zoom','blackhole','immersed','virtual','aggregate','display','soundflower'}
-for line in lines.splitlines():
-    if 'AVFoundation audio devices' in line:
-        in_audio = True
-        continue
-    if in_audio:
-        m = re.search(r'\[\d+\]\s+(.*)', line)
-        if m:
-            name = m.group(1).strip()
-            if not any(s in name.lower() for s in skip):
-                print(name)
-                break
-")
+AUDIO_DEVICES=$(echo "$DEVICE_LIST" | awk '/AVFoundation audio devices:/,0' | grep '\[[0-9]\]')
+
+if [ -z "$AUDIO_DEVICES" ]; then
+    echo "⚠️  No audio devices found. Defaulting to 'default'."
+    FFMPEG_AUDIO_IDX="default"
+else
+    echo ""
+    echo "Available Microphones:"
+    i=1
+    declare -a device_names
+    declare -a device_indices
+    while read -r line; do
+        idx=$(echo "$line" | sed -E 's/.*\[([0-9]+)\].*/\1/')
+        name=$(echo "$line" | sed -E 's/.*\] (.*)/\1/')
+        echo "  $i) $name"
+        device_names[$i]="$name"
+        device_indices[$i]="$idx"
+        ((i++))
+    done <<< "$AUDIO_DEVICES"
+    
+    echo ""
+    read -p "Select a microphone [1]: " choice
+    choice=${choice:-1}
+    
+    if [[ "$choice" -gt 0 && "$choice" -lt "$i" ]]; then
+        FFMPEG_AUDIO_IDX="${device_indices[$choice]}"
+        FFMPEG_AUDIO_NAME="${device_names[$choice]}"
+    else
+        FFMPEG_AUDIO_IDX="0"
+        FFMPEG_AUDIO_NAME="Default"
+    fi
+fi
 set -e
-FFMPEG_AUDIO_IDX="${FFMPEG_AUDIO_IDX:-default}"
-echo "Using audio device: $FFMPEG_AUDIO_IDX"
+echo "Using audio device: ${FFMPEG_AUDIO_NAME:-$FFMPEG_AUDIO_IDX}"
 
 # ── All downloads done — pipe exhausted, stdin is now the terminal ───────────
 
@@ -124,6 +138,7 @@ cat > ~/quickgroq/config.json <<EOF
   "apiKey": "$API_KEY",
   "apiUrl": "$API_URL",
   "model": "$MODEL",
+  "audioDevice": "$FFMPEG_AUDIO_IDX",
   "hotkey": {
     "mods": $HS_MODS,
     "key": "$HOTKEY"
@@ -164,7 +179,6 @@ local mods       = config.hotkey.mods
 local key        = config.hotkey.key
 local nodePath   = "${NODE_PATH}"
 local ffmpegPath = "${FFMPEG_PATH}"
-local audioIdx   = "${FFMPEG_AUDIO_IDX}"
 local scriptPath = os.getenv("HOME") .. "/quickgroq/dictate.js"
 local audioFile  = "/tmp/quickgroq.wav"
 
@@ -183,6 +197,41 @@ local durationTimer   = nil
 local indicatorPos    = nil
 local recordingStart  = nil
 local lastTrigger     = 0
+
+-- ── Interactive Microphone Chooser ───────────────────────────────────────────
+local function updateConfig(newConfig)
+    local f = io.open(configPath, "w")
+    if f then
+        f:write(hs.json.encode(newConfig, true))
+        f:close()
+        hs.reload()
+    end
+end
+
+local function chooseMicrophone()
+    local devices = hs.audiodevice.allInputDevices()
+    local choices = {}
+    for _, dev in ipairs(devices) do
+        table.insert(choices, {
+            text = dev:name(),
+            subText = dev:uid(),
+            dev = dev
+        })
+    end
+
+    local chooser = hs.chooser.new(function(choice)
+        if choice then
+            -- We need the ffmpeg index, which can be tricky from hs.audiodevice
+            -- But ffmpeg also accepts device names!
+            config.audioDevice = choice.text
+            hs.alert.show("🎤 QuickGroq: Set to " .. choice.text)
+            updateConfig(config)
+        end
+    end)
+    chooser:placeholderText("Select Microphone for QuickGroq...")
+    chooser:choices(choices)
+    chooser:show()
+end
 
 local function showIndicator(labelText, pulse, textColor)
     if blinkTimer      then blinkTimer:stop();        blinkTimer      = nil end
@@ -259,6 +308,7 @@ hs.hotkey.bind(mods, key, function()
             showIndicator(string.format("● %d:%02d", mins, secs), true, recordingColor)
         end)
 
+        local audioIdx = config.audioDevice or "0"
         ffmpegTask = hs.task.new(ffmpegPath, nil,
             { "-y", "-f", "avfoundation", "-i", "none:" .. audioIdx,
               "-ac", "1", "-ar", "16000", audioFile })
@@ -284,7 +334,6 @@ hs.hotkey.bind(mods, key, function()
 
             hs.task.new(nodePath,
                 function(exitCode, _, stdErr)
-                    -- completion callback — read from buffer, not stdOut param
                     if exitCode == 0 then
                         local trimmed = stdOutBuffer:gsub("%s+$", "")
                         hideIndicator("done ✓", 1.5, doneColor)
@@ -301,7 +350,6 @@ hs.hotkey.bind(mods, key, function()
                     end
                 end,
                 function(_, chunk, _)
-                    -- streaming callback — accumulate stdout
                     if chunk then stdOutBuffer = stdOutBuffer .. chunk end
                     return true
                 end,
@@ -309,6 +357,11 @@ hs.hotkey.bind(mods, key, function()
             ):start()
         end)
     end
+end)
+
+-- ── Settings Shortcut (cmd+shift+s) ──────────────────────────────────────────
+hs.hotkey.bind(mods, "s", function()
+    chooseMicrophone()
 end)
 
 -- ── Reload shortcut ──────────────────────────────────────────────────────────
