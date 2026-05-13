@@ -48,12 +48,17 @@ Choose your operating system below. The installer handles downloading the necess
 Once installed, QuickGroq runs invisibly in the background. It will automatically launch itself every time you restart your computer.
 
 1. Click into any text box where you want to type (an email, a code editor, a chat box).
-2. Press your activation hotkey:
-   * **Mac:** `Command + Shift + D`
-   * **Windows:** `Ctrl + Shift + D`
-3. A small indicator will appear near your cursor showing a live recording timer (e.g. `● 0:04`). Start speaking naturally.
+2. Press your activation hotkey (Default: `Cmd+Shift+D` on Mac, `Ctrl+Shift+D` on Windows).
+3. A small indicator will appear exactly where your blinking text cursor is, showing a live recording timer (e.g. `● 0:04`). Start speaking naturally.
 4. When you are finished, press the hotkey again.
 5. The indicator will show `transcribing...` for a moment, then `done ✓` — and your transcribed text will appear automatically.
+
+### ⌨️ Default Shortcuts
+| Action | Mac | Windows |
+| :--- | :--- | :--- |
+| **Transcribe** | `Cmd + Shift + D` | `Ctrl + Shift + D` |
+| **Change Mic** | `Cmd + Shift + S` | `Ctrl + Shift + S` |
+| **Reload Config** | `Cmd + Shift + R` | Right-click tray → Reload |
 
 *(Note: QuickGroq safely backs up whatever you previously had copied to your clipboard, pastes your new text, and then restores your clipboard automatically!)*
 
@@ -73,8 +78,8 @@ This usually means your Groq API key was entered incorrectly, or you ran out of 
 **"I see ❌ failed after transcribing."**
 This means the transcription request didn't go through. Check your internet connection and verify your API key as above.
 
-**"How do I change my hotkey?"**
-Edit `~/quickgroq/config.json` (Mac) or `C:\Users\YourName\quickgroq\config.json` (Windows) and update the hotkey value. On Mac, click 🔨 → **Reload Config** after saving. On Windows, right-click the tray icon → **Exit**, then relaunch `QuickGroq.ahk`.
+**"How do I change my hotkeys?"**
+Edit `~/quickgroq/config.json` (Mac) or `C:\Users\YourName\quickgroq\config.json` (Windows). You can now customize each shortcut independently in the `hotkeys` section. On Mac, press your **Reload Config** shortcut (`Cmd + Shift + R`) after saving. On Windows, right-click the tray icon → **Exit**, then relaunch `QuickGroq.ahk`.
 
 **"How do I uninstall it?"**
 * **Mac:** Delete the `~/quickgroq` folder and the `~/.hammerspoon` folder. You can also uninstall Hammerspoon from your Applications.

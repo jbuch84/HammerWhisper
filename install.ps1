@@ -85,6 +85,12 @@ $ConfigJson = @{
     apiKey = $ApiKey
     apiUrl = "https://api.groq.com/openai/v1/audio/transcriptions"
     model  = "whisper-large-v3"
+    hotkeys = @{
+        transcribe = @{ mods = @("ctrl", "shift"); key = "d" }
+        micSelect  = @{ mods = @("ctrl", "shift"); key = "s" }
+        reload     = @{ mods = @("ctrl", "shift"); key = "r" }
+    }
+    # Legacy field for compatibility with current AHK patching
     hotkey = $HotkeyString
 } | ConvertTo-Json
 
